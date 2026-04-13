@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { projects, tasks, users } from '../utils/api';
+import { projects, tasks } from '../utils/api';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -17,6 +17,7 @@ interface Task {
   assignee_id: string | null;
   due_date: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface UserOption {
@@ -30,6 +31,7 @@ interface Project {
   name: string;
   description: string | null;
   tasks: Task[];
+  assignable_users?: UserOption[];
 }
 
 interface TaskFormData {
@@ -53,23 +55,14 @@ export const ProjectDetailPage: React.FC = () => {
 
   useEffect(() => {
     loadProject();
-    loadUsers();
   }, [id]);
-
-  const loadUsers = async () => {
-    try {
-      const response = await users.list();
-      setUserOptions(response.data.users || []);
-    } catch {
-      setUserOptions([]);
-    }
-  };
 
   const loadProject = async () => {
     try {
       setLoading(true);
       const response = await projects.get(id!);
       setProject(response.data);
+      setUserOptions(response.data.assignable_users || []);
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load project');
@@ -104,6 +97,14 @@ export const ProjectDetailPage: React.FC = () => {
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to assign task');
     }
+  };
+
+  const formatDate = (value: string | null) => {
+    if (!value) {
+      return 'Not set';
+    }
+
+    return new Date(value).toLocaleDateString();
   };
 
   const getAssigneeLabel = (assigneeId: string | null) => {
@@ -175,43 +176,61 @@ export const ProjectDetailPage: React.FC = () => {
           </CardHeader>
           <CardContent>
           <form onSubmit={handleCreateTask} className="space-y-3">
-            <Input
-              type="text"
-              placeholder="Task title"
-              value={formData.title}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((current: TaskFormData) => ({ ...current, title: e.target.value }))}
-              required
-            />
-            <Textarea
-              placeholder="Description (optional)"
-              value={formData.description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((current: TaskFormData) => ({ ...current, description: e.target.value }))}
-              rows={2}
-            />
-            <Select
-              value={formData.priority}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData((current: TaskFormData) => ({ ...current, priority: e.target.value as TaskFormData['priority'] }))}
-            >
-              <option value="low">Low Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="high">High Priority</option>
-            </Select>
-            <Select
-              value={formData.assignee_id}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData((current: TaskFormData) => ({ ...current, assignee_id: e.target.value }))}
-            >
-              <option value="">Unassigned</option>
-              {userOptions.map((userOption: UserOption) => (
-                <option key={userOption.id} value={userOption.id}>
-                  {userOption.name}
-                </option>
-              ))}
-            </Select>
-            <Input
-              type="date"
-              value={formData.due_date}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((current: TaskFormData) => ({ ...current, due_date: e.target.value }))}
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Title</label>
+              <Input
+                type="text"
+                placeholder="Task title"
+                value={formData.title}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((current: TaskFormData) => ({ ...current, title: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Description</label>
+              <Textarea
+                placeholder="Description (optional)"
+                value={formData.description}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData((current: TaskFormData) => ({ ...current, description: e.target.value }))}
+                rows={2}
+              />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Priority</label>
+                <Select
+                  value={formData.priority}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData((current: TaskFormData) => ({ ...current, priority: e.target.value as TaskFormData['priority'] }))}
+                >
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Assignee</label>
+                <Select
+                  value={formData.assignee_id}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData((current: TaskFormData) => ({ ...current, assignee_id: e.target.value }))}
+                >
+                  <option value="">Unassigned</option>
+                  {userOptions.map((userOption: UserOption) => (
+                    <option key={userOption.id} value={userOption.id}>
+                      {userOption.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Due Date</label>
+              <Input
+                type="date"
+                value={formData.due_date}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((current: TaskFormData) => ({ ...current, due_date: e.target.value }))}
+              />
+              <p className="text-xs text-slate-500">Optional. Created date and updated date are maintained automatically by the backend.</p>
+            </div>
             <div className="flex gap-2">
               <Button type="submit">Create</Button>
               <Button type="button" variant="secondary" onClick={() => setShowTaskForm(false)}>Cancel</Button>
@@ -235,6 +254,11 @@ export const ProjectDetailPage: React.FC = () => {
                 <div key={task.id} className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
                   <p className="font-medium text-sm">{task.title}</p>
                   {task.description && <p className="text-xs text-slate-600 mt-1">{task.description}</p>}
+                  <div className="mt-3 space-y-1 text-xs text-slate-500">
+                    <p>Created: {formatDate(task.created_at)}</p>
+                    <p>Updated: {formatDate(task.updated_at)}</p>
+                    <p>Due: {formatDate(task.due_date)}</p>
+                  </div>
                   <div className="flex justify-between items-center mt-2">
                     <div className="flex items-center gap-2">
                     <Badge className={`${

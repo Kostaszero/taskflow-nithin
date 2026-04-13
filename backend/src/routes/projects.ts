@@ -76,9 +76,14 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       [id]
     );
 
+    const usersResult = await db.query(
+      'SELECT id, name, email, created_at FROM users ORDER BY created_at ASC'
+    );
+
     res.json({
       ...projectResult.rows[0],
       tasks: tasksResult.rows,
+      assignable_users: usersResult.rows,
     });
   } catch (error) {
     next(error);

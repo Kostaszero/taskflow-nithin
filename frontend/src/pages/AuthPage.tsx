@@ -8,10 +8,27 @@ import { Input } from '../components/ui/input';
 
 type FormMode = 'login' | 'register';
 
+const EyeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+    <path d="M3 3l18 18" />
+    <path d="M10.6 10.7A3 3 0 0 0 9 12a3 3 0 0 0 4.3 2.7" />
+    <path d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a18.7 18.7 0 0 1-3.2 4.2" />
+    <path d="M6.6 6.7C4.5 8.1 3 10.5 2 12c0 0 3.5 7 10 7 1.8 0 3.3-.5 4.6-1.2" />
+  </svg>
+);
+
 export const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<FormMode>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   
   const { isLoading: authLoading, token, login } = useAuthContext();
@@ -125,14 +142,31 @@ export const AuthPage: React.FC = () => {
             required
           />
 
-          <Input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleInputChange}
-            required
-          />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+              <label htmlFor="password">Password</label>
+            </div>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+              </button>
+            </div>
+          </div>
 
           <Button
             type="submit"
