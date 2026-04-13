@@ -5,7 +5,7 @@ import db from '../db.js';
 const router = Router();
 
 // GET /projects/:id/tasks
-router.get('/:projectId/tasks', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/projects/:projectId/tasks', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { projectId } = req.params;
     const { status, assignee, page = 1, limit = 20 } = req.query;
@@ -41,7 +41,7 @@ router.get('/:projectId/tasks', async (req: Request, res: Response, next: NextFu
 });
 
 // POST /projects/:id/tasks
-router.post('/:projectId/tasks', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/projects/:projectId/tasks', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { projectId } = req.params;
     const { title, description, priority, assignee_id, due_date } = req.body;
@@ -81,7 +81,7 @@ router.post('/:projectId/tasks', async (req: Request, res: Response, next: NextF
 });
 
 // PATCH /tasks/:id
-router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/tasks/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { title, description, status, priority, assignee_id, due_date } = req.body;
@@ -140,7 +140,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 });
 
 // DELETE /tasks/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/tasks/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 

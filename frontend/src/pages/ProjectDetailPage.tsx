@@ -5,7 +5,6 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Select } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 
 interface Task {
@@ -38,7 +37,7 @@ interface TaskFormData {
   title: string;
   description: string;
   priority: 'low' | 'medium' | 'high';
-  assignee_id: string;
+  assignee_name: string;
   due_date: string;
 }
 
@@ -47,11 +46,12 @@ export const ProjectDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [userOptions, setUserOptions] = useState<UserOption[]>([]);
+  const [taskAssigneeInputs, setTaskAssigneeInputs] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter] = useState<{ status?: string }>({});
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [formData, setFormData] = useState<TaskFormData>({ title: '', description: '', priority: 'medium', assignee_id: '', due_date: '' });
+  const [formData, setFormData] = useState<TaskFormData>({ title: '', description: '', priority: 'medium', assignee_name: '', due_date: '' });
 
   useEffect(() => {
     loadProject();
@@ -63,6 +63,11 @@ export const ProjectDetailPage: React.FC = () => {
       const response = await projects.get(id!);
       setProject(response.data);
       setUserOptions(response.data.assignable_users || []);
+      setTaskAssigneeInputs(
+        Object.fromEntries(
+          (response.data.tasks || []).map((task: Task) => [task.id, response.data.assignable_users?.find((userOption: UserOption) => userOption.id === task.assignee_id)?.name || ''])
+        )
+      );
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load project');
@@ -71,18 +76,55 @@ export const ProjectDetailPage: React.FC = () => {
     }
   };
 
+  const resolveAssigneeId = (value: string) => {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+      return null;
+    }
+
+    const match = userOptions.find((userOption: UserOption) => {
+      const normalizedValue = trimmedValue.toLowerCase();
+      return userOption.name.toLowerCase() === normalizedValue || userOption.email.toLowerCase() === normalizedValue;
+    });
+
+    return match?.id || null;
+  };
+
+  const getMatchingUsers = (query: string) => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return [] as UserOption[];
+    }
+
+    return userOptions
+      .filter((userOption: UserOption) =>
+        userOption.name.toLowerCase().includes(normalizedQuery) ||
+        userOption.email.toLowerCase().includes(normalizedQuery)
+      )
+      .slice(0, 4);
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const assigneeId = resolveAssigneeId(formData.assignee_name);
+
+      if (formData.assignee_name.trim() && !assigneeId) {
+        setError('Assignee must match an existing user name or email.');
+        return;
+      }
+
       await tasks.create(
         id!,
         formData.title,
         formData.description,
         formData.priority,
-        formData.assignee_id || undefined,
+        assigneeId || undefined,
         formData.due_date,
       );
-      setFormData({ title: '', description: '', priority: 'medium', assignee_id: '', due_date: '' });
+      setFormData({ title: '', description: '', priority: 'medium', assignee_name: '', due_date: '' });
       setShowTaskForm(false);
       await loadProject();
     } catch (err: any) {
@@ -97,6 +139,25 @@ export const ProjectDetailPage: React.FC = () => {
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to assign task');
     }
+  };
+
+  const handleTaskAssigneeInputChange = (taskId: string, value: string) => {
+    setTaskAssigneeInputs((current: Record<string, string>) => ({ ...current, [taskId]: value }));
+  };
+
+  const handleTaskAssigneeCommit = async (taskId: string, value: string, currentAssigneeId: string | null) => {
+    const assigneeId = resolveAssigneeId(value);
+
+    if (value.trim() && !assigneeId) {
+      setError('Assignee must match an existing user name or email.');
+      setTaskAssigneeInputs((current: Record<string, string>) => ({
+        ...current,
+        [taskId]: getAssigneeLabel(currentAssigneeId),
+      }));
+      return;
+    }
+
+    await handleAssignTask(taskId, assigneeId || '');
   };
 
   const formatDate = (value: string | null) => {
@@ -198,28 +259,45 @@ export const ProjectDetailPage: React.FC = () => {
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Priority</label>
-                <Select
+                <select
                   value={formData.priority}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData((current: TaskFormData) => ({ ...current, priority: e.target.value as TaskFormData['priority'] }))}
+                  className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                 >
-                  <option value="low">Low Priority</option>
-                  <option value="medium">Medium Priority</option>
-                  <option value="high">High Priority</option>
-                </Select>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Assignee</label>
-                <Select
-                  value={formData.assignee_id}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData((current: TaskFormData) => ({ ...current, assignee_id: e.target.value }))}
-                >
-                  <option value="">Unassigned</option>
-                  {userOptions.map((userOption: UserOption) => (
-                    <option key={userOption.id} value={userOption.id}>
-                      {userOption.name}
-                    </option>
-                  ))}
-                </Select>
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.assignee_name}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((current: TaskFormData) => ({ ...current, assignee_name: e.target.value }))}
+                    placeholder="Type a name"
+                    list="taskflow-assignee-options"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setFormData((current: TaskFormData) => ({ ...current, assignee_name: '' }))}
+                  >
+                    Clear
+                  </Button>
+                </div>
+                {formData.assignee_name.trim() && (
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600">
+                    {getMatchingUsers(formData.assignee_name).length > 0
+                      ? getMatchingUsers(formData.assignee_name).map((userOption: UserOption) => (
+                          <p key={userOption.id}>
+                            {userOption.name} ({userOption.email})
+                          </p>
+                        ))
+                      : 'No matching users'}
+                  </div>
+                )}
+                <p className="text-xs text-slate-500">Optional. Start typing to select user.</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -293,24 +371,36 @@ export const ProjectDetailPage: React.FC = () => {
                       </Button>
                     </div>
                   </div>
-                  <Select
-                    value={task.assignee_id || ''}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleAssignTask(task.id, e.target.value)}
-                    className="mt-3 h-9 text-xs"
-                  >
-                    <option value="">Unassigned</option>
-                    {userOptions.map((userOption: UserOption) => (
-                      <option key={userOption.id} value={userOption.id}>
-                        {userOption.name}
-                      </option>
-                    ))}
-                  </Select>
+                  <div className="mt-3 flex gap-2">
+                    <Input
+                      value={taskAssigneeInputs[task.id] || ''}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleTaskAssigneeInputChange(task.id, e.target.value)}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => void handleTaskAssigneeCommit(task.id, e.target.value, task.assignee_id)}
+                      placeholder="Assign by name"
+                      list="taskflow-assignee-options"
+                      className="h-9 text-xs"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => void handleAssignTask(task.id, '')}
+                    >
+                      Unassign
+                    </Button>
+                  </div>
                 </div>
               ))}
             </CardContent>
           </Card>
         ))}
       </div>
+      <datalist id="taskflow-assignee-options">
+        {userOptions.map((userOption: UserOption) => (
+          <option key={userOption.id} value={userOption.name} label={userOption.email} />
+        ))}
+      </datalist>
     </div>
   );
 };

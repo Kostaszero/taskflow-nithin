@@ -37,7 +37,7 @@ app.use(express.json());
 // API Routes
 app.use('/auth', authRoutes);
 app.use('/projects', verifyToken, projectRoutes);
-app.use('/tasks', verifyToken, taskRoutes);
+app.use(verifyToken, taskRoutes);
 app.use('/users', verifyToken, userRoutes);
 
 // Health check
