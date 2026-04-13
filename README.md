@@ -123,7 +123,7 @@ I want to be transparent about the choices I made and why, rather than just list
 
 ### Node.js/Express over Go
 
-The assignment listed Go as preferred, and I considered it. I chose Node/Express because the entire stack is then one language — TypeScript end to end. That means a single mental model for types, error handling, and async patterns. At this scale, Go's concurrency advantages don't materialise, and a split-language codebase is harder to navigate for a reviewer with limited time. If this were a high-throughput service processing thousands of concurrent connections, the calculus changes.
+The assignment listed Go as preferred, and I considered it. I chose Node/Express because the entire stack is then one language — TypeScript end to end. That means a single mental model for types, error handling, and async patterns. If this were a high-throughput service processing thousands of concurrent connections, the calculus changes.
 
 ### Vite over Create React App
 
@@ -147,11 +147,11 @@ Every task mutation (create, edit, status change, delete) updates local React st
 
 ### Server-side user search for assignee autocomplete
 
-Rather than loading all users into the client when a project page loads (which doesn't scale), the assignee input hits `GET /users/search?q=` with a 250ms debounce. The endpoint returns at most 50 results ordered by prefix relevance. This is the right architecture from day one — any real product has far more users than tasks, and front-loading all of them is a mistake you'd eventually have to fix.
+Rather than loading all users into the client when a project page loads (which doesn't scale), the assignee input hits `GET /users/search?q=` with a 250ms debounce. The endpoint returns at most 50 results ordered by prefix relevance. This is the right architecture from day one, any real product has far more users than tasks, and front-loading all of them is a mistake you'd eventually have to fix.
 
 ### No real-time updates
 
-WebSockets would make the product better, but they would also meaningfully increase the codebase — persistent connection management, reconnection logic, and server-side event fan-out. I made the call to build the core product solidly rather than ship a live-update feature that's half-done. It's at the top of my "what's next" list.
+WebSockets would make the product better, but they would also meaningfully increase the codebase, persistent connection management, reconnection logic, and server-side event fan-out. I made the call to build the core product solidly rather than ship a live-update feature that's half-done. It's at the top of my "what's next" list.
 
 ---
 
@@ -288,7 +288,7 @@ Unauthenticated users are redirected to `/login`. Auth state is stored in `local
 
 ## What I'd Do With More Time
 
-These aren't things I didn't think of — they're deliberate cuts to stay within the intended scope.
+These aren't things I didn't think of, they're deliberate cuts to stay within the intended scope.
 
 **Highest priority:**
 - **Real-time updates** — WebSocket-based task sync so changes made by one user are immediately visible to others on the same project. The architecture is already set up for it; the missing piece is the connection layer.
