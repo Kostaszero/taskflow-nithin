@@ -223,7 +223,7 @@ export const ProjectDetailPage: React.FC = () => {
           onClick={() => setShowTaskForm(true)}
           size="lg"
         >
-          New Task
+          Create Task
         </Button>
       </div>
 
@@ -307,7 +307,6 @@ export const ProjectDetailPage: React.FC = () => {
                 value={formData.due_date}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((current: TaskFormData) => ({ ...current, due_date: e.target.value }))}
               />
-              <p className="text-xs text-slate-500">Optional. Created date and updated date are maintained automatically by the backend.</p>
             </div>
             <div className="flex gap-2">
               <Button type="submit">Create</Button>

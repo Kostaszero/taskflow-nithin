@@ -46,6 +46,10 @@ router.post('/projects/:projectId/tasks', async (req: Request, res: Response, ne
     const { projectId } = req.params;
     const { title, description, priority, assignee_id, due_date } = req.body;
 
+    if (!req.user?.user_id) {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+
     if (!title) {
       return res.status(400).json({
         error: 'validation failed',
@@ -59,7 +63,7 @@ router.post('/projects/:projectId/tasks', async (req: Request, res: Response, ne
     await db.query(
       `INSERT INTO tasks (id, title, description, status, priority, project_id, created_by, assignee_id, due_date, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [taskId, title, description || null, 'todo', priority || 'medium', projectId, req.user!.user_id, assignee_id || null, due_date || null, now, now]
+      [taskId, title, description || null, 'todo', priority || 'medium', projectId, req.user.user_id, assignee_id || null, due_date || null, now, now]
     );
 
     res.status(201).json({
@@ -69,7 +73,7 @@ router.post('/projects/:projectId/tasks', async (req: Request, res: Response, ne
       status: 'todo',
       priority: priority || 'medium',
       project_id: projectId,
-      created_by: req.user!.user_id,
+      created_by: req.user.user_id,
       assignee_id: assignee_id || null,
       due_date: due_date || null,
       created_at: now,

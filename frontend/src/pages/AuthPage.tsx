@@ -71,7 +71,7 @@ export const AuthPage: React.FC = () => {
       <div className="mx-auto grid min-h-[80vh] max-w-5xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="hidden lg:block">
           <div className="mb-6 inline-flex rounded-full border border-slate-300 bg-white/70 px-4 py-1 text-sm text-slate-700 shadow-sm backdrop-blur">
-            Full-stack task orchestration
+            End-End orchestration
           </div>
           <h1 className="max-w-xl text-5xl font-semibold tracking-tight text-slate-950">
             Run projects with a calmer, sharper workflow.

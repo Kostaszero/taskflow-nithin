@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { useAuthContext } from './hooks/useAuth';
 import { AuthPage } from './pages/AuthPage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -14,14 +14,16 @@ const AppShell: React.FC = () => {
         <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
-              <div className="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white">TF</div>
-              <div>
+              <Link to="/" className="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+                TF
+              </Link>
+              <Link to="/" className="no-underline">
                 <h1 className="text-lg font-semibold text-slate-950">TaskFlow</h1>
                 <p className="text-sm text-slate-500">Project and task command center</p>
-              </div>
+              </Link>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-600">Hello, {user.name}</span>
+              <span className="text-sm text-slate-600">Hello, <b>{user.name}</b>!</span>
               <button
                 onClick={() => {
                   logout();
