@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getApiErrorMessage, projects, tasks } from '../utils/api';
+import { getApiErrorMessage, projects, tasks, users } from '../utils/api';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -14,6 +14,7 @@ interface Task {
   status: 'todo' | 'in_progress' | 'done';
   priority: 'low' | 'medium' | 'high';
   assignee_id: string | null;
+  created_by: string | null;
   due_date: string | null;
   created_at: string;
   updated_at: string;
@@ -52,6 +53,7 @@ export const TaskDetailPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAssigneeMenuOpen, setIsAssigneeMenuOpen] = useState(false);
+  const [assigneeSuggestions, setAssigneeSuggestions] = useState<UserOption[]>([]);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     title: '',
     description: '',
@@ -96,6 +98,56 @@ export const TaskDetailPage: React.FC = () => {
     void loadTask();
   }, [id, taskId]);
 
+  useEffect(() => {
+    if (!isAssigneeMenuOpen) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void searchAssignableUsers(editFormData.assignee_name);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [editFormData.assignee_name, isAssigneeMenuOpen]);
+
+  const mergeKnownUsers = (incomingUsers: UserOption[]) => {
+    if (incomingUsers.length === 0) {
+      return;
+    }
+
+    setProject((currentProject: Project | null) => {
+      if (!currentProject) {
+        return currentProject;
+      }
+
+      const knownUsers = currentProject.assignable_users || [];
+      const byId = new Map(knownUsers.map((userOption: UserOption) => [userOption.id, userOption]));
+      incomingUsers.forEach((userOption: UserOption) => byId.set(userOption.id, userOption));
+
+      return {
+        ...currentProject,
+        assignable_users: Array.from(byId.values()),
+      };
+    });
+  };
+
+  const searchAssignableUsers = async (query: string) => {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) {
+      setAssigneeSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await users.search(normalizedQuery, 8);
+      const foundUsers: UserOption[] = response.data.users || [];
+      setAssigneeSuggestions(foundUsers);
+      mergeKnownUsers(foundUsers);
+    } catch {
+      setAssigneeSuggestions([]);
+    }
+  };
+
   const formatDate = (value: string | null) => {
     if (!value) {
       return 'Not set';
@@ -113,6 +165,15 @@ export const TaskDetailPage: React.FC = () => {
     return match ? `${match.name} (${match.email})` : 'Assigned';
   };
 
+  const getUserLabelById = (userId: string | null | undefined) => {
+    if (!userId) {
+      return 'Unknown';
+    }
+
+    const match = project?.assignable_users?.find((userOption: UserOption) => userOption.id === userId);
+    return match ? `${match.name} (${match.email})` : 'Unknown';
+  };
+
   const getStatusLabel = (status: string) => {
     return status === 'in_progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1);
   };
@@ -124,7 +185,10 @@ export const TaskDetailPage: React.FC = () => {
       return null;
     }
 
-    const match = project?.assignable_users?.find((userOption: UserOption) => {
+    const allKnownUsers = [...(project?.assignable_users || []), ...assigneeSuggestions];
+    const uniqueUsers = Array.from(new Map(allKnownUsers.map((userOption: UserOption) => [userOption.id, userOption])).values());
+
+    const match = uniqueUsers.find((userOption: UserOption) => {
       const normalizedValue = trimmedValue.toLowerCase();
       return userOption.name.toLowerCase() === normalizedValue || userOption.email.toLowerCase() === normalizedValue;
     });
@@ -139,17 +203,22 @@ export const TaskDetailPage: React.FC = () => {
       return [] as UserOption[];
     }
 
+    if (assigneeSuggestions.length > 0) {
+      return assigneeSuggestions.slice(0, 8);
+    }
+
     return (project?.assignable_users || [])
       .filter((userOption: UserOption) =>
         userOption.name.toLowerCase().includes(normalizedQuery) ||
         userOption.email.toLowerCase().includes(normalizedQuery)
       )
-      .slice(0, 5);
+      .slice(0, 8);
   };
 
   const selectAssignee = (name: string) => {
     setEditFormData((current: EditFormData) => ({ ...current, assignee_name: name }));
     setIsAssigneeMenuOpen(false);
+    setAssigneeSuggestions([]);
   };
 
   const startEditing = () => {
@@ -171,11 +240,13 @@ export const TaskDetailPage: React.FC = () => {
     });
     setIsEditing(true);
     setIsAssigneeMenuOpen(false);
+    setAssigneeSuggestions([]);
   };
 
   const cancelEditing = () => {
     setIsEditing(false);
     setIsAssigneeMenuOpen(false);
+    setAssigneeSuggestions([]);
     setError(null);
   };
 
@@ -235,6 +306,7 @@ export const TaskDetailPage: React.FC = () => {
       });
       setIsEditing(false);
       setIsAssigneeMenuOpen(false);
+      setAssigneeSuggestions([]);
       setError(null);
     } catch (err: any) {
       setError(getApiErrorMessage(err, 'Failed to update task'));
@@ -274,12 +346,6 @@ export const TaskDetailPage: React.FC = () => {
                   value={editFormData.title}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditFormData((current: EditFormData) => ({ ...current, title: e.target.value }))}
                   className="h-12 text-3xl font-semibold tracking-tight"
-                />
-                <Textarea
-                  value={editFormData.description}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditFormData((current: EditFormData) => ({ ...current, description: e.target.value }))}
-                  rows={5}
-                  className="max-w-3xl"
                 />
               </div>
             ) : (
@@ -333,20 +399,6 @@ export const TaskDetailPage: React.FC = () => {
                   {task.description || 'No description added.'}
                 </div>
               )}
-            </section>
-
-            <section>
-              <h2 className="mb-2 text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Timeline</h2>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Created</p>
-                  <p className="mt-2 text-sm text-slate-900">{formatDate(task.created_at)}</p>
-                </div>
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Last Updated</p>
-                  <p className="mt-2 text-sm text-slate-900">{formatDate(task.updated_at)}</p>
-                </div>
-              </div>
             </section>
           </CardContent>
         </Card>
@@ -437,6 +489,18 @@ export const TaskDetailPage: React.FC = () => {
                 ) : (
                   <p className="mt-2 text-sm text-slate-900">{getAssigneeLabel()}</p>
                 )}
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Created By</p>
+                <p className="mt-2 text-sm text-slate-900">{getUserLabelById(task.created_by)}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Created</p>
+                <p className="mt-2 text-sm text-slate-900">{formatDate(task.created_at)}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Updated</p>
+                <p className="mt-2 text-sm text-slate-900">{formatDate(task.updated_at)}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Due Date</p>

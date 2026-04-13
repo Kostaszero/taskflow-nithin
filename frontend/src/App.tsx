@@ -15,7 +15,7 @@ const AppShell: React.FC = () => {
         <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
-              <Link to="/" className="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold no-underline text-white transition hover:bg-slate-800">
+              <Link to="/" className="rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
                 TF
               </Link>
               <Link to="/" className="no-underline">

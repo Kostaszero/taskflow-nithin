@@ -76,14 +76,35 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       [id]
     );
 
-    const usersResult = await db.query(
-      'SELECT id, name, email, created_at FROM users ORDER BY created_at ASC'
+    const relatedUserIdsResult = await db.query(
+      `SELECT DISTINCT user_id
+       FROM (
+         SELECT assignee_id AS user_id FROM tasks WHERE project_id = $1 AND assignee_id IS NOT NULL
+         UNION ALL
+         SELECT created_by AS user_id FROM tasks WHERE project_id = $1 AND created_by IS NOT NULL
+         UNION ALL
+         SELECT owner_id AS user_id FROM projects WHERE id = $1
+       ) related_users`,
+      [id]
     );
+
+    const relatedUserIds = relatedUserIdsResult.rows
+      .map((row: { user_id: string | null }) => row.user_id)
+      .filter((value: string | null): value is string => Boolean(value));
+
+    let assignableUsers: Array<{ id: string; name: string; email: string; created_at: string }> = [];
+    if (relatedUserIds.length > 0) {
+      const usersResult = await db.query(
+        'SELECT id, name, email, created_at FROM users WHERE id = ANY($1::uuid[]) ORDER BY name ASC',
+        [relatedUserIds]
+      );
+      assignableUsers = usersResult.rows;
+    }
 
     res.json({
       ...projectResult.rows[0],
       tasks: tasksResult.rows,
-      assignable_users: usersResult.rows,
+      assignable_users: assignableUsers,
     });
   } catch (error) {
     next(error);

@@ -82,6 +82,7 @@ export const projects = {
 
 export const users = {
   list: () => api.get('/users'),
+  search: (q: string, limit = 10) => api.get('/users/search', { params: { q, limit } }),
 };
 
 export const tasks = {
