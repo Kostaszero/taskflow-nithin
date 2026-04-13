@@ -1,12 +1,11 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
-import { AuthRequest } from '../types.js';
 
 const router = Router();
 
 // GET /projects/:id/tasks
-router.get('/:projectId/tasks', async (req: AuthRequest, res: Response, next) => {
+router.get('/:projectId/tasks', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { projectId } = req.params;
     const { status, assignee, page = 1, limit = 20 } = req.query;
@@ -42,7 +41,7 @@ router.get('/:projectId/tasks', async (req: AuthRequest, res: Response, next) =>
 });
 
 // POST /projects/:id/tasks
-router.post('/:projectId/tasks', async (req: AuthRequest, res: Response, next) => {
+router.post('/:projectId/tasks', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { projectId } = req.params;
     const { title, description, priority, assignee_id, due_date } = req.body;
@@ -82,7 +81,7 @@ router.post('/:projectId/tasks', async (req: AuthRequest, res: Response, next) =
 });
 
 // PATCH /tasks/:id
-router.patch('/:id', async (req: AuthRequest, res: Response, next) => {
+router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { title, description, status, priority, assignee_id, due_date } = req.body;
@@ -141,7 +140,7 @@ router.patch('/:id', async (req: AuthRequest, res: Response, next) => {
 });
 
 // DELETE /tasks/:id
-router.delete('/:id', async (req: AuthRequest, res: Response, next) => {
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 

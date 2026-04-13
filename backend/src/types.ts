@@ -34,7 +34,3 @@ export interface JWTPayload {
   iat: number;
   exp: number;
 }
-
-export interface AuthRequest extends Express.Request {
-  user?: JWTPayload;
-}

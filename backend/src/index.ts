@@ -1,8 +1,7 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import 'dotenv/config';
 import pinoHttp from 'pino-http';
-import { Pool } from 'pg';
 
 import { authRoutes } from './routes/auth.js';
 import { projectRoutes } from './routes/projects.js';
@@ -11,7 +10,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { verifyToken } from './middleware/auth.js';
 
 const app: Express = express();
-const port = process.env.PORT || 3001;
+const port = Number(process.env.PORT || 3001);
 
 // Middleware
 app.use(pinoHttp());

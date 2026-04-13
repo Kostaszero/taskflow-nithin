@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
+import { NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
-import { AppError } from '../middleware/errorHandler.js';
 import { User } from '../types.js';
 
 const router = Router();
@@ -33,10 +33,11 @@ router.post('/register', async (req: Request, res: Response, next: any) => {
       [userId, name, email, hashedPassword, now]
     );
 
+    const expiresIn = (process.env.JWT_EXPIRY || '24h') as jwt.SignOptions['expiresIn'];
     const token = jwt.sign(
       { user_id: userId, email },
       process.env.JWT_SECRET || 'secret',
-      { expiresIn: process.env.JWT_EXPIRY || '24h' }
+      { expiresIn }
     );
 
     res.status(201).json({
@@ -76,10 +77,11 @@ router.post('/login', async (req: Request, res: Response, next: any) => {
       return res.status(401).json({ error: 'invalid credentials' });
     }
 
+    const expiresIn = (process.env.JWT_EXPIRY || '24h') as jwt.SignOptions['expiresIn'];
     const token = jwt.sign(
       { user_id: user.id, email: user.email },
       process.env.JWT_SECRET || 'secret',
-      { expiresIn: process.env.JWT_EXPIRY || '24h' }
+      { expiresIn }
     );
 
     res.json({

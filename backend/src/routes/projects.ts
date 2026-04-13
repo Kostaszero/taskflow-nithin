@@ -1,12 +1,11 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db.js';
-import { AuthRequest, Project } from '../types.js';
 
 const router = Router();
 
 // GET /projects
-router.get('/', async (req: AuthRequest, res: Response, next) => {
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -27,7 +26,7 @@ router.get('/', async (req: AuthRequest, res: Response, next) => {
 });
 
 // POST /projects
-router.post('/', async (req: AuthRequest, res: Response, next) => {
+router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, description } = req.body;
 
@@ -59,7 +58,7 @@ router.post('/', async (req: AuthRequest, res: Response, next) => {
 });
 
 // GET /projects/:id
-router.get('/:id', async (req: AuthRequest, res: Response, next) => {
+router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -87,7 +86,7 @@ router.get('/:id', async (req: AuthRequest, res: Response, next) => {
 });
 
 // PATCH /projects/:id
-router.patch('/:id', async (req: AuthRequest, res: Response, next) => {
+router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { name, description } = req.body;
@@ -130,7 +129,7 @@ router.patch('/:id', async (req: AuthRequest, res: Response, next) => {
 });
 
 // DELETE /projects/:id
-router.delete('/:id', async (req: AuthRequest, res: Response, next) => {
+router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -153,7 +152,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response, next) => {
 });
 
 // GET /projects/:id/stats (BONUS)
-router.get('/:id/stats', async (req: AuthRequest, res: Response, next) => {
+router.get('/:id/stats', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 

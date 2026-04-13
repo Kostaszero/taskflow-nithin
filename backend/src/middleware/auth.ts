@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { JWTPayload, AuthRequest } from '../types.js';
+import { JWTPayload } from '../types.js';
 
-export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'unauthorized' });
+    res.status(401).json({ error: 'unauthorized' });
+    return;
   }
 
   try {
@@ -14,6 +15,7 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'unauthorized' });
+    res.status(401).json({ error: 'unauthorized' });
+    return;
   }
 };
